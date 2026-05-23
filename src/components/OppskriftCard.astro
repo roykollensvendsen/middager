@@ -1,0 +1,30 @@
+---
+interface Props {
+  href: string;
+  tittel: string;
+  beskrivelse: string;
+  tid_min: number;
+  porsjoner: number;
+  tagger: string[];
+}
+const { href, tittel, beskrivelse, tid_min, porsjoner, tagger } = Astro.props;
+---
+
+<a
+  href={href}
+  class="group block rounded-2xl border border-stone-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+>
+  <h2 class="font-serif text-2xl font-bold text-lam group-hover:underline">
+    {tittel}
+  </h2>
+  <p class="mt-2 text-sm text-stone-600">{beskrivelse}</p>
+  <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-stone-500">
+    <span>⏱ {tid_min} min</span>
+    <span>👥 {porsjoner} porsjoner</span>
+    {
+      tagger.map((tag) => (
+        <span class="rounded-full bg-urt/10 px-2 py-0.5 text-urt">{tag}</span>
+      ))
+    }
+  </div>
+</a>

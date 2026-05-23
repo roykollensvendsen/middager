@@ -1,0 +1,80 @@
+---
+interface Vare {
+  vare: string;
+  mengde: string;
+  butikk: 'Meny' | 'Rema 1000' | 'Kiwi' | 'Hvilken som helst';
+  ca_pris_nok?: number;
+  notat?: string;
+}
+interface Props {
+  handleliste: Vare[];
+}
+const { handleliste } = Astro.props;
+
+const total = handleliste.reduce((sum, v) => sum + (v.ca_pris_nok ?? 0), 0);
+
+const butikkFarge: Record<Vare['butikk'], string> = {
+  Meny: 'bg-red-100 text-red-800',
+  'Rema 1000': 'bg-blue-100 text-blue-800',
+  Kiwi: 'bg-green-100 text-green-800',
+  'Hvilken som helst': 'bg-stone-100 text-stone-700',
+};
+
+const grupper = new Map<Vare['butikk'], Vare[]>();
+for (const v of handleliste) {
+  if (!grupper.has(v.butikk)) grupper.set(v.butikk, []);
+  grupper.get(v.butikk)!.push(v);
+}
+const butikkRekkefølge: Vare['butikk'][] = ['Meny', 'Rema 1000', 'Kiwi', 'Hvilken som helst'];
+---
+
+<section class="rounded-2xl border border-stone-200 bg-white p-6">
+  <div class="flex items-end justify-between">
+    <h2 class="font-serif text-2xl font-bold text-lam">Handleliste</h2>
+    <span class="text-sm text-stone-500">
+      Total ca. <strong class="text-stone-700">{total} kr</strong>
+    </span>
+  </div>
+  <p class="mt-2 text-xs text-stone-500">
+    Priser er omtrentlige og hentet fra observasjoner. Sjekk
+    <a class="underline hover:text-lam" href="https://kassal.app" target="_blank" rel="noopener noreferrer">Kassalapp</a>
+    eller butikkens app for dagsaktuell pris.
+  </p>
+
+  <div class="mt-5 space-y-5">
+    {
+      butikkRekkefølge
+        .filter((butikk) => grupper.has(butikk))
+        .map((butikk) => {
+          const varer = grupper.get(butikk)!;
+          const sum = varer.reduce((s, v) => s + (v.ca_pris_nok ?? 0), 0);
+          return (
+            <div>
+              <div class="mb-2 flex items-center justify-between">
+                <span class={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${butikkFarge[butikk]}`}>
+                  {butikk}
+                </span>
+                <span class="text-xs text-stone-500">ca. {sum} kr</span>
+              </div>
+              <ul class="divide-y divide-stone-100 rounded-xl border border-stone-100">
+                {varer.map((v) => (
+                  <li class="flex items-baseline justify-between gap-3 px-3 py-2 text-sm">
+                    <div>
+                      <div class="font-medium text-stone-800">{v.vare}</div>
+                      {v.notat && <div class="text-xs text-stone-500">{v.notat}</div>}
+                    </div>
+                    <div class="shrink-0 text-right">
+                      <div class="text-xs text-stone-500">{v.mengde}</div>
+                      {v.ca_pris_nok !== undefined && v.ca_pris_nok > 0 && (
+                        <div class="font-medium text-stone-700">{v.ca_pris_nok} kr</div>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })
+    }
+  </div>
+</section>

@@ -1,0 +1,44 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import OppskriftCard from '../components/OppskriftCard.astro';
+
+const oppskrifter = (await getCollection('oppskrifter')).sort(
+  (a, b) => new Date(b.data.dato_lagt_til).getTime() - new Date(a.data.dato_lagt_til).getTime()
+);
+const base = import.meta.env.BASE_URL;
+---
+
+<Base tittel="Middager · familiens kokebok" beskrivelse="Familiens digitale kokebok med oppskrifter og handlelister.">
+  <section class="mb-10">
+    <h1 class="font-serif text-4xl font-bold text-lam sm:text-5xl">
+      Middager hos familien
+    </h1>
+    <p class="mt-3 max-w-2xl text-stone-600">
+      Roy, Cesaria, Lukas (8) og Alana (5) sin lille kokebok. Hver oppskrift har
+      ingredienser, fremgangsmåte og en ferdig handleliste fordelt på Meny, Rema 1000 og Kiwi.
+    </p>
+  </section>
+
+  <section>
+    <h2 class="sr-only">Alle oppskrifter</h2>
+    {
+      oppskrifter.length === 0 ? (
+        <p class="text-stone-500">Ingen oppskrifter ennå. Legg til en .md-fil i src/content/oppskrifter/.</p>
+      ) : (
+        <div class="grid gap-4 sm:grid-cols-2">
+          {oppskrifter.map((o) => (
+            <OppskriftCard
+              href={`${base}oppskrifter/${o.slug}/`}
+              tittel={o.data.tittel}
+              beskrivelse={o.data.beskrivelse}
+              tid_min={o.data.tid_min}
+              porsjoner={o.data.porsjoner}
+              tagger={o.data.tagger}
+            />
+          ))}
+        </div>
+      )
+    }
+  </section>
+</Base>

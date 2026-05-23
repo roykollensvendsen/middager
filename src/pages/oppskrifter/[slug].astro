@@ -1,0 +1,86 @@
+---
+import { getCollection, type CollectionEntry } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import Ingredienser from '../../components/Ingredienser.astro';
+import Handleliste from '../../components/Handleliste.astro';
+
+export async function getStaticPaths() {
+  const oppskrifter = await getCollection('oppskrifter');
+  return oppskrifter.map((o) => ({
+    params: { slug: o.slug },
+    props: { oppskrift: o },
+  }));
+}
+
+interface Props {
+  oppskrift: CollectionEntry<'oppskrifter'>;
+}
+const { oppskrift } = Astro.props;
+const { Content } = await oppskrift.render();
+const d = oppskrift.data;
+const base = import.meta.env.BASE_URL;
+---
+
+<Base tittel={`${d.tittel} · Middager`} beskrivelse={d.beskrivelse}>
+  <a href={base} class="mb-6 inline-block text-sm text-stone-500 hover:text-lam">
+    ← Tilbake til alle oppskrifter
+  </a>
+
+  <header class="mb-8">
+    <h1 class="font-serif text-4xl font-bold text-lam sm:text-5xl">{d.tittel}</h1>
+    <p class="mt-3 max-w-3xl text-lg text-stone-600">{d.beskrivelse}</p>
+    <div class="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-stone-500">
+      <span>⏱ {d.tid_min} min</span>
+      <span>👥 {d.porsjoner} porsjoner</span>
+      <span class="capitalize">📊 {d.vanskelighet}</span>
+      {d.tagger.map((t) => <span class="rounded-full bg-urt/10 px-2 py-0.5 text-urt">{t}</span>)}
+    </div>
+  </header>
+
+  <div class="grid gap-6 lg:grid-cols-3">
+    <div class="space-y-6 lg:col-span-2">
+      <Ingredienser ingredienser={d.ingredienser} />
+      <article class="prose max-w-none rounded-2xl border border-stone-200 bg-white p-6">
+        <Content />
+      </article>
+    </div>
+    <aside class="lg:sticky lg:top-6 lg:self-start">
+      <Handleliste handleliste={d.handleliste} />
+    </aside>
+  </div>
+</Base>
+
+<style is:global>
+  .prose {
+    color: #44403c;
+    line-height: 1.7;
+  }
+  .prose h2 {
+    font-family: 'Fraunces', Georgia, serif;
+    color: #7a3b2e;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-top: 1.75rem;
+    margin-bottom: 0.75rem;
+  }
+  .prose h3 {
+    font-family: 'Fraunces', Georgia, serif;
+    color: #5a7a3e;
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-top: 1.25rem;
+    margin-bottom: 0.5rem;
+  }
+  .prose p {
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .prose ul {
+    list-style: disc;
+    padding-left: 1.25rem;
+    margin: 0.5rem 0;
+  }
+  .prose strong {
+    color: #292524;
+  }
+</style>
