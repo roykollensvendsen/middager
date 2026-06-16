@@ -8,8 +8,10 @@ interface Vare {
 }
 interface Props {
   handleliste: Vare[];
+  slug: string;
 }
-const { handleliste } = Astro.props;
+const { handleliste, slug } = Astro.props;
+const lagerNøkkel = `handleliste:${slug}`;
 
 const total = handleliste.reduce((sum, v) => sum + (v.ca_pris_nok ?? 0), 0);
 
@@ -28,13 +30,20 @@ for (const v of handleliste) {
 const butikkRekkefølge: Vare['butikk'][] = ['Meny', 'Rema 1000', 'Kiwi', 'Hvilken som helst'];
 ---
 
-<section class="rounded-2xl border border-stone-200 bg-white p-6">
+<section class="rounded-2xl border border-stone-200 bg-white p-6" data-handleliste data-nokkel={lagerNøkkel}>
   <div class="flex items-end justify-between">
     <h2 class="font-serif text-2xl font-bold text-lam">Handleliste</h2>
     <span class="text-sm text-stone-500">
       Total ca. <strong class="text-stone-700">{total} kr</strong>
     </span>
   </div>
+  <button
+    type="button"
+    data-nullstill
+    class="mt-1 hidden text-xs text-stone-400 underline hover:text-lam"
+  >
+    Nullstill avkrysninger
+  </button>
   <p class="mt-2 text-xs text-stone-500">
     Priser er omtrentlige og hentet fra observasjoner. Sjekk
     <a class="underline hover:text-lam" href="https://kassal.app" target="_blank" rel="noopener noreferrer">Kassalapp</a>
@@ -58,17 +67,25 @@ const butikkRekkefølge: Vare['butikk'][] = ['Meny', 'Rema 1000', 'Kiwi', 'Hvilk
               </div>
               <ul class="divide-y divide-stone-100 rounded-xl border border-stone-100">
                 {varer.map((v) => (
-                  <li class="flex items-baseline justify-between gap-3 px-3 py-2 text-sm">
-                    <div>
-                      <div class="font-medium text-stone-800">{v.vare}</div>
-                      {v.notat && <div class="text-xs text-stone-500">{v.notat}</div>}
-                    </div>
-                    <div class="shrink-0 text-right">
-                      <div class="text-xs text-stone-500">{v.mengde}</div>
-                      {v.ca_pris_nok !== undefined && v.ca_pris_nok > 0 && (
-                        <div class="font-medium text-stone-700">{v.ca_pris_nok} kr</div>
-                      )}
-                    </div>
+                  <li>
+                    <label class="flex cursor-pointer items-baseline gap-3 px-3 py-2 text-sm transition-colors hover:bg-stone-50">
+                      <input
+                        type="checkbox"
+                        class="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-urt"
+                        data-vare
+                        data-id={`${butikk}::${v.vare}`}
+                      />
+                      <div class="min-w-0 flex-1">
+                        <div class="font-medium text-stone-800" data-tekst>{v.vare}</div>
+                        {v.notat && <div class="text-xs text-stone-500" data-tekst>{v.notat}</div>}
+                      </div>
+                      <div class="shrink-0 text-right" data-tekst>
+                        <div class="text-xs text-stone-500">{v.mengde}</div>
+                        {v.ca_pris_nok !== undefined && v.ca_pris_nok > 0 && (
+                          <div class="font-medium text-stone-700">{v.ca_pris_nok} kr</div>
+                        )}
+                      </div>
+                    </label>
                   </li>
                 ))}
               </ul>
@@ -78,3 +95,64 @@ const butikkRekkefølge: Vare['butikk'][] = ['Meny', 'Rema 1000', 'Kiwi', 'Hvilk
     }
   </div>
 </section>
+
+<script>
+  function settOppHandleliste(seksjon: HTMLElement) {
+    const nøkkel = seksjon.dataset.nokkel;
+    if (!nøkkel) return;
+
+    const bokser = Array.from(
+      seksjon.querySelectorAll<HTMLInputElement>('input[data-vare]')
+    );
+    const nullstill = seksjon.querySelector<HTMLButtonElement>('[data-nullstill]');
+
+    let avkrysset: string[] = [];
+    try {
+      avkrysset = JSON.parse(localStorage.getItem(nøkkel) ?? '[]');
+    } catch {
+      avkrysset = [];
+    }
+
+    function lagre() {
+      const valgte = bokser.filter((b) => b.checked).map((b) => b.dataset.id!);
+      localStorage.setItem(nøkkel!, JSON.stringify(valgte));
+      if (nullstill) nullstill.classList.toggle('hidden', valgte.length === 0);
+    }
+
+    function visStil(boks: HTMLInputElement) {
+      const label = boks.closest('label');
+      label
+        ?.querySelectorAll<HTMLElement>('[data-tekst]')
+        .forEach((el) => el.classList.toggle('line-through', boks.checked));
+      label?.classList.toggle('opacity-50', boks.checked);
+    }
+
+    for (const boks of bokser) {
+      boks.checked = avkrysset.includes(boks.dataset.id!);
+      visStil(boks);
+      boks.addEventListener('change', () => {
+        visStil(boks);
+        lagre();
+      });
+    }
+
+    nullstill?.addEventListener('click', () => {
+      for (const boks of bokser) {
+        boks.checked = false;
+        visStil(boks);
+      }
+      lagre();
+    });
+
+    if (nullstill) {
+      nullstill.classList.toggle(
+        'hidden',
+        !bokser.some((b) => b.checked)
+      );
+    }
+  }
+
+  document
+    .querySelectorAll<HTMLElement>('[data-handleliste]')
+    .forEach(settOppHandleliste);
+</script>
